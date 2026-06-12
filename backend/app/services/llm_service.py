@@ -34,8 +34,20 @@ class LLMService:
                 temperature=0.3,
             )
             logger.info(f"Initialized OpenAI LLM with model: {settings.OPENAI_MODEL}")
+        elif self.provider == "groq":
+            from langchain_groq import ChatGroq
+
+            self.llm = ChatGroq(
+                model=settings.GROQ_MODEL,
+                api_key=settings.GROQ_API_KEY,
+                temperature=0.3,
+            )
+            logger.info(f"Initialized Groq LLM with model: {settings.GROQ_MODEL}")
         else:
-            raise ValueError(f"Unsupported LLM provider: {self.provider}")
+            raise ValueError(
+                f"Unsupported LLM provider: {self.provider!r}. "
+                "Valid options are: 'gemini', 'openai', 'groq'."
+            )
 
     async def generate(self, prompt: str) -> str:
         """Generate a response from the LLM given a prompt.

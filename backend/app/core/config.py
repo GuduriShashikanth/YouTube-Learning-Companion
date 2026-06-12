@@ -12,13 +12,15 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/youtube_companion"
 
     # LLM Provider
-    LLM_PROVIDER: str = "gemini"
+    LLM_PROVIDER: str = "groq"
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
 
     # Models
     GEMINI_MODEL: str = "gemini-2.0-flash"
     OPENAI_MODEL: str = "gpt-4o-mini"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # ChromaDB
     CHROMA_PERSIST_DIR: str = "./chroma_data"
