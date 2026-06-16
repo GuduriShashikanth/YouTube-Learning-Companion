@@ -36,10 +36,10 @@ function AppHeader() {
   };
 
   return (
-    <header className="glass-strong sticky top-0 z-50">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+    <header className="glass-strong sticky top-0 z-50 rounded-none border-t-0 border-x-0 bg-opacity-95">
+      <div className="mx-auto flex max-w-none items-center justify-between px-4 py-3 md:px-8 lg:px-12">
         <Link to="/" className="group flex items-center gap-3">
-          <div className="gradient-primary flex h-9 w-9 items-center justify-center rounded-xl shadow-lg shadow-primary/20 transition-transform duration-300 group-hover:scale-110">
+          <div className="bg-[#E11D48] flex h-9 w-9 items-center justify-center rounded-xl shadow-md transition-transform duration-300 group-hover:scale-110">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -98,31 +98,31 @@ function AppShell() {
           className="animate-float-slow absolute -top-32 -left-32 h-96 w-96 rounded-full opacity-20"
           style={{
             background:
-              'radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(225,29,72,0.03) 0%, transparent 70%)',
           }}
         />
         <div
-          className="animate-float absolute -right-24 top-1/3 h-80 w-80 rounded-full opacity-15"
+          className="animate-float absolute -right-24 top-1/3 h-80 w-80 rounded-full opacity-20"
           style={{
             background:
-              'radial-gradient(circle, rgba(59,130,246,0.4) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(254,243,199,0.06) 0%, transparent 70%)',
             animationDelay: '2s',
           }}
         />
         <div
-          className="animate-float-slow absolute bottom-0 left-1/3 h-72 w-72 rounded-full opacity-10"
+          className="animate-float-slow absolute bottom-0 left-1/3 h-72 w-72 rounded-full opacity-15"
           style={{
             background:
-              'radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(100,116,139,0.02) 0%, transparent 70%)',
             animationDelay: '4s',
           }}
         />
         {/* Subtle grid overlay */}
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage:
-              'linear-gradient(rgba(148,163,184,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.5) 1px, transparent 1px)',
+              'linear-gradient(rgba(100,116,139,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(100,116,139,0.2) 1px, transparent 1px)',
             backgroundSize: '60px 60px',
           }}
         />

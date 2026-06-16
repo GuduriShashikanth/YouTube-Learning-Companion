@@ -18,36 +18,36 @@ const FEATURES = [
     icon: BookOpen,
     title: 'Smart Notes',
     description: 'AI-generated study notes with key concepts and summaries',
-    color: 'from-purple-500 to-indigo-600',
-    iconColor: 'text-purple-400',
+    bg: 'bg-red-50',
+    iconColor: 'text-[#E11D48]',
   },
   {
     icon: Layers,
     title: 'Flashcards',
     description: 'Interactive flashcards for spaced repetition learning',
-    color: 'from-blue-500 to-cyan-600',
-    iconColor: 'text-blue-400',
+    bg: 'bg-red-50',
+    iconColor: 'text-[#E11D48]',
   },
   {
     icon: Brain,
     title: 'Quiz Mode',
     description: 'Test your understanding with auto-generated quizzes',
-    color: 'from-emerald-500 to-teal-600',
-    iconColor: 'text-emerald-400',
+    bg: 'bg-red-50',
+    iconColor: 'text-[#E11D48]',
   },
   {
     icon: MessageSquare,
     title: 'AI Chat',
     description: 'Ask questions about the video with RAG-powered answers',
-    color: 'from-orange-500 to-amber-600',
-    iconColor: 'text-orange-400',
+    bg: 'bg-red-50',
+    iconColor: 'text-[#E11D48]',
   },
   {
     icon: Clock,
     title: 'Timestamps',
     description: 'Navigate with clickable timestamps linked to the video',
-    color: 'from-pink-500 to-rose-600',
-    iconColor: 'text-pink-400',
+    bg: 'bg-red-50',
+    iconColor: 'text-[#E11D48]',
   },
 ];
 
@@ -63,20 +63,20 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-none px-4 py-8 md:px-8 lg:px-12">
       {/* Hero Section */}
       <section className="animate-fade-in-up py-12 text-center sm:py-20">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary-light">
+        <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50/50 px-4 py-1.5 text-sm font-semibold text-[#E11D48]">
           <Sparkles className="h-4 w-4" />
           AI-Powered Video Learning
         </div>
 
         <h1 className="mx-auto max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
           <span className="text-text">YouTube</span>{' '}
-          <span className="gradient-text">Learning Companion</span>
+          <span className="text-[#E11D48]">Learning Companion</span>
         </h1>
 
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-muted sm:text-xl">
+        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-text-muted sm:text-xl font-medium">
           Transform any YouTube video into interactive study materials.
           <br className="hidden sm:block" />
           Notes, flashcards, quizzes, and AI chat — all in one place.
@@ -90,7 +90,7 @@ export default function HomePage() {
 
       {/* Features Section */}
       <section className="py-12">
-        <h2 className="mb-2 text-center text-sm font-semibold uppercase tracking-widest text-primary-light">
+        <h2 className="mb-2 text-center text-sm font-bold uppercase tracking-widest text-[#E11D48]">
           Features
         </h2>
         <p className="mb-10 text-center text-2xl font-bold text-text sm:text-3xl">
@@ -103,18 +103,18 @@ export default function HomePage() {
             return (
               <div
                 key={feature.title}
-                className="glass group cursor-default rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                className="glass group cursor-default rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-lg"
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div
-                  className={`mb-4 inline-flex rounded-xl bg-gradient-to-br ${feature.color} p-2.5 shadow-lg`}
+                  className={`mb-4 inline-flex rounded-xl ${feature.bg} p-2.5 border border-red-100`}
                 >
-                  <Icon className="h-5 w-5 text-white" />
+                  <Icon className={`h-5 w-5 ${feature.iconColor}`} />
                 </div>
-                <h3 className="mb-1.5 text-sm font-semibold text-text">
+                <h3 className="mb-1.5 text-sm font-bold text-text">
                   {feature.title}
                 </h3>
-                <p className="text-xs leading-relaxed text-text-muted">
+                <p className="text-xs font-semibold leading-relaxed text-text-muted">
                   {feature.description}
                 </p>
               </div>

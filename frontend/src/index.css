@@ -2,23 +2,23 @@
 
 /* Custom theme variables using @theme */
 @theme {
-  --color-primary: #8b5cf6;
-  --color-primary-light: #a78bfa;
-  --color-primary-dark: #7c3aed;
-  --color-accent: #3b82f6;
-  --color-accent-light: #60a5fa;
-  --color-surface: #1e293b;
-  --color-surface-dark: #0f172a;
-  --color-surface-light: #334155;
-  --color-surface-lighter: #475569;
-  --color-success: #10b981;
-  --color-success-light: #34d399;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-error-light: #f87171;
-  --color-text: #f1f5f9;
-  --color-text-muted: #94a3b8;
-  --color-text-dim: #64748b;
+  --color-primary: #E11D48;          /* Coral Red */
+  --color-primary-light: #F43F5E;    /* Light Coral Red */
+  --color-primary-dark: #BE123C;     /* Dark Coral Red */
+  --color-accent: #E11D48;           /* Coral Red */
+  --color-accent-light: #FDA4AF;     /* Soft Red/Rose */
+  --color-surface: #FFFFFF;          /* Pure White for card content */
+  --color-surface-dark: #FDFBF7;     /* Cream Alabaster (App Background) */
+  --color-surface-light: #F5F2EB;    /* Warm Soft Gray/Alabaster for inactive elements */
+  --color-surface-lighter: #EAE6DC;  /* Darker border color */
+  --color-success: #15803D;          /* Sage Green */
+  --color-success-light: #22C55E;    /* Light Sage Green */
+  --color-warning: #FEF3C7;          /* Soft Amber (concept highlights) */
+  --color-error: #EF4444;
+  --color-error-light: #FCA5A5;
+  --color-text: #1A1D20;             /* Ink Black */
+  --color-text-muted: #64748B;       /* Steel Gray */
+  --color-text-dim: #94A3B8;         /* Lighter Steel Gray */
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -32,8 +32,8 @@ html {
 }
 
 body {
-  background-color: var(--color-surface-dark);
-  color: var(--color-text);
+  background-color: var(--color-surface-dark); /* Cream Alabaster */
+  color: var(--color-text); /* Ink Black */
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -59,65 +59,62 @@ body {
   background: var(--color-surface-lighter);
 }
 
-/* Glass effect utility */
+/* Glass effect utility - styled as soft, clean academic card container */
 .glass {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: var(--color-surface);
+  border: 1px solid rgba(100, 116, 139, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(100, 116, 139, 0.04), 0 2px 8px -1px rgba(100, 116, 139, 0.02);
+  border-radius: 1rem;
 }
 
 .glass-light {
-  background: rgba(51, 65, 85, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: var(--color-surface-light);
+  border: 1px solid rgba(100, 116, 139, 0.06);
+  box-shadow: none;
+  border-radius: 1rem;
 }
 
 .glass-strong {
-  background: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: var(--color-surface);
+  border: 1px solid rgba(100, 116, 139, 0.1);
+  box-shadow: 0 10px 30px -5px rgba(26, 29, 32, 0.05), 0 4px 12px -2px rgba(26, 29, 32, 0.03);
+  border-radius: 1rem;
 }
 
-/* Gradient utilities */
+/* Gradient utilities (Overriden to be flat to meet the "No gradients" rule) */
 .gradient-primary {
-  background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+  background: var(--color-primary);
 }
 
 .gradient-primary-hover {
-  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  background: var(--color-primary-dark);
 }
 
 .gradient-surface {
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  background: var(--color-surface);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #a78bfa, #60a5fa);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-background-clip: initial;
+  -webkit-text-fill-color: initial;
+  background-clip: initial;
+  color: var(--color-primary);
+  font-weight: 700;
 }
 
 .gradient-border {
   position: relative;
   background: var(--color-surface);
   border-radius: 1rem;
+  border: 1px solid var(--color-surface-light);
 }
 
-.gradient-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(59, 130, 246, 0.4));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+/* Typography styles matching specification */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  color: var(--color-text); /* Ink Black */
+  font-weight: 700;
 }
 
 /* Animations */
@@ -152,8 +149,8 @@ body {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.6); }
+  0%, 100% { box-shadow: 0 0 10px rgba(225, 29, 72, 0.15); }
+  50% { box-shadow: 0 0 20px rgba(225, 29, 72, 0.3); }
 }
 
 @keyframes shimmer {
@@ -163,13 +160,13 @@ body {
 
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-10px) rotate(1deg); }
-  66% { transform: translateY(5px) rotate(-1deg); }
+  33% { transform: translateY(-5px) rotate(0.5deg); }
+  66% { transform: translateY(3px) rotate(-0.5deg); }
 }
 
 @keyframes float-slow {
   0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
+  50% { transform: translateY(-10px); }
 }
 
 @keyframes spin-slow {
@@ -190,7 +187,7 @@ body {
 
 @keyframes bounce-in {
   0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.05); }
+  50% { transform: scale(1.03); }
   100% { transform: scale(1); opacity: 1; }
 }
 
@@ -214,7 +211,7 @@ body {
 
 /* Skeleton loader */
 .skeleton {
-  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-light) 50%, var(--color-surface) 75%);
+  background: linear-gradient(90deg, var(--color-surface-light) 25%, var(--color-surface-lighter) 50%, var(--color-surface-light) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 0.5rem;
@@ -225,29 +222,30 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
-  color: var(--color-primary-light);
+  color: var(--color-text);
 }
 
 .prose-custom h2 {
   font-size: 1.25rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .prose-custom h3 {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 
 .prose-custom p {
   margin-bottom: 0.75rem;
   line-height: 1.7;
-  color: var(--color-text-muted);
+  color: var(--color-text);
+  font-size: 16px;
 }
 
 .prose-custom ul {
@@ -264,31 +262,31 @@ body {
 
 .prose-custom li {
   margin-bottom: 0.25rem;
-  color: var(--color-text-muted);
+  color: var(--color-text);
   line-height: 1.6;
+  font-size: 16px;
 }
 
 .prose-custom strong {
   color: var(--color-text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .prose-custom em {
-  color: var(--color-primary-light);
   font-style: italic;
 }
 
 .prose-custom code {
-  background: var(--color-surface);
+  background: var(--color-surface-light);
   padding: 0.15rem 0.4rem;
   border-radius: 0.25rem;
   font-size: 0.9em;
-  color: var(--color-accent-light);
+  color: var(--color-primary);
 }
 
 .prose-custom pre {
-  background: var(--color-surface-dark);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: var(--color-surface-light);
+  border: 1px solid var(--color-surface-lighter);
   border-radius: 0.5rem;
   padding: 1rem;
   overflow-x: auto;
@@ -309,13 +307,13 @@ body {
 }
 
 .prose-custom a {
-  color: var(--color-accent);
+  color: var(--color-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .prose-custom a:hover {
-  color: var(--color-accent-light);
+  color: var(--color-primary-dark);
 }
 
 /* 3D Flip card */
@@ -341,3 +339,4 @@ body {
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+

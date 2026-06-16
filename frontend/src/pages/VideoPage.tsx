@@ -1,41 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import {
-  FileText,
-  BookOpen,
-  Layers,
-  Brain,
-  MessageSquare,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { AlertCircle, RefreshCw, Loader2, Sparkles, MessageSquare, Layers, BookOpen, Brain } from 'lucide-react';
 import { getVideo } from '../api/client';
 import type { Video } from '../types';
 import VideoPlayer from '../components/VideoPlayer';
-import TranscriptView from '../components/TranscriptView';
+import TranscriptNotesPanel from '../components/TranscriptNotesPanel';
 import NotesView from '../components/NotesView';
-import FlashcardView from '../components/FlashcardView';
 import QuizView from '../components/QuizView';
+import FlashcardView from '../components/FlashcardView';
 import ChatPanel from '../components/ChatPanel';
-import Sidebar from '../components/Sidebar';
-
-type TabKey = 'transcript' | 'notes' | 'flashcards' | 'quiz' | 'chat';
-
-const TABS: { key: TabKey; label: string; icon: typeof FileText }[] = [
-  { key: 'transcript', label: 'Transcript', icon: FileText },
-  { key: 'notes', label: 'Notes', icon: BookOpen },
-  { key: 'flashcards', label: 'Flashcards', icon: Layers },
-  { key: 'quiz', label: 'Quiz', icon: Brain },
-  { key: 'chat', label: 'Chat', icon: MessageSquare },
-];
 
 export default function VideoPage() {
   const { videoId } = useParams<{ videoId: string }>();
   const [video, setVideo] = useState<Video | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>('transcript');
   const [startTime, setStartTime] = useState<number | undefined>(undefined);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [notesUpdatedKey, setNotesUpdatedKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<'summary' | 'quiz' | 'flashcards' | 'chat'>('summary');
 
   const fetchVideo = useCallback(async () => {
     if (!videoId) return;
@@ -57,24 +40,26 @@ export default function VideoPage() {
 
   const handleTimestampClick = useCallback((seconds: number) => {
     setStartTime(seconds);
+    // Clear start time shortly after so subsequent clicks to same time still trigger state change
+    setTimeout(() => setStartTime(undefined), 100);
   }, []);
+
+  const handleNotesGenerated = () => {
+    setNotesUpdatedKey((prev) => prev + 1);
+  };
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="mx-auto max-w-none px-4 py-8 md:px-8 lg:px-12">
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
           <div>
             <div className="skeleton mb-6 aspect-video w-full rounded-2xl" />
             <div className="skeleton mb-4 h-8 w-64 rounded-xl" />
-            <div className="flex gap-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="skeleton h-10 w-24 rounded-xl" />
-              ))}
-            </div>
-            <div className="skeleton mt-6 h-64 w-full rounded-2xl" />
+            <div className="skeleton mb-6 h-48 w-full rounded-2xl" />
+            <div className="skeleton h-64 w-full rounded-2xl" />
           </div>
           <div className="hidden lg:block">
-            <div className="skeleton h-96 w-full rounded-2xl" />
+            <div className="skeleton h-[600px] w-full rounded-2xl" />
           </div>
         </div>
       </div>
@@ -84,9 +69,9 @@ export default function VideoPage() {
   if (error || !video) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <div className="glass animate-scale-in rounded-2xl p-10">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-error/10">
-            <AlertCircle className="h-8 w-8 text-error" />
+        <div className="glass animate-scale-in rounded-2xl p-10 bg-white border border-surface-light">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+            <AlertCircle className="h-8 w-8 text-[#E11D48]" />
           </div>
           <h2 className="mb-2 text-xl font-bold text-text">
             {error || 'Video not found'}
@@ -96,7 +81,7 @@ export default function VideoPage() {
           </p>
           <button
             onClick={fetchVideo}
-            className="gradient-primary inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-all duration-300 hover:shadow-xl hover:shadow-primary/30"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#E11D48] hover:bg-[#BE123C] text-white px-6 py-2.5 text-sm font-semibold shadow-md transition-all duration-200"
           >
             <RefreshCw className="h-4 w-4" />
             Try Again
@@ -107,71 +92,87 @@ export default function VideoPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        {/* Main Content */}
-        <div className="min-w-0">
-          {/* Video Player */}
-          <div className="animate-fade-in mb-6">
+    <div className="mx-auto max-w-none px-4 py-6 md:px-8 lg:px-12">
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px] items-start">
+        {/* Main Content Area */}
+        <div className="min-w-0 space-y-6">
+          {/* Custom Video Player */}
+          <div className="animate-fade-in">
             <VideoPlayer
               youtubeVideoId={video.youtube_video_id}
               startTime={startTime}
+              onTimeUpdate={setCurrentTime}
             />
           </div>
 
           {/* Video Title */}
-          <h1 className="animate-fade-in mb-4 text-xl font-bold text-text sm:text-2xl">
-            {video.title || 'Untitled Video'}
-          </h1>
+          <div className="animate-fade-in">
+            <h1 className="text-xl md:text-2xl font-bold text-text tracking-tight">
+              {video.title || 'Untitled Video'}
+            </h1>
+            <p className="text-xs font-semibold text-text-muted mt-1">
+              Processed on{' '}
+              {new Date(video.created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </p>
+          </div>
 
-          {/* Tab Navigation */}
-          <div className="animate-fade-in mb-6 flex gap-1 overflow-x-auto rounded-2xl bg-surface/80 p-1.5">
-            {TABS.map((tab) => {
+          {/* Sub-Tabs Navigation */}
+          <div className="animate-fade-in flex gap-1 border-b border-surface-light pb-2">
+            {[
+              { key: 'summary', label: 'Lesson Summary', icon: BookOpen },
+              { key: 'quiz', label: 'Lesson Quiz', icon: Brain },
+              { key: 'flashcards', label: 'Flashcards', icon: Layers },
+              { key: 'chat', label: 'AI Chat Assistant', icon: MessageSquare },
+            ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.key;
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  onClick={() => setActiveTab(tab.key as any)}
+                  className={`flex items-center gap-2 py-2.5 px-4 text-xs font-bold rounded-xl border transition-all duration-200 ${
                     isActive
-                      ? 'gradient-primary text-white shadow-lg shadow-primary/20'
-                      : 'text-text-muted hover:bg-surface-light/50 hover:text-text'
+                      ? 'bg-white border-surface-light text-[#E11D48] shadow-sm'
+                      : 'border-transparent text-text-muted hover:text-text hover:bg-surface-light/50 font-medium'
                   }`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-[#E11D48]' : 'text-text-muted'}`} />
+                  {tab.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Tab Content */}
-          <div className="animate-fade-in">
-            {activeTab === 'transcript' && (
-              <TranscriptView
-                videoId={video.id}
-                onTimestampClick={handleTimestampClick}
-              />
+          {/* Active Tab Content */}
+          <div className="animate-fade-in min-h-[400px]">
+            {activeTab === 'summary' && (
+              <NotesView videoId={video.id} onNotesGenerated={handleNotesGenerated} />
             )}
-            {activeTab === 'notes' && <NotesView videoId={video.id} />}
+            {activeTab === 'quiz' && (
+              <QuizView videoId={video.id} />
+            )}
             {activeTab === 'flashcards' && (
               <FlashcardView videoId={video.id} />
             )}
-            {activeTab === 'quiz' && <QuizView videoId={video.id} />}
             {activeTab === 'chat' && (
-              <ChatPanel
-                videoId={video.id}
-                onTimestampClick={handleTimestampClick}
-              />
+              <ChatPanel videoId={video.id} onTimestampClick={handleTimestampClick} />
             )}
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="hidden lg:block">
-          <div className="sticky top-20">
-            <Sidebar currentVideoId={video.id} />
+        {/* Sidebar Column */}
+        <aside className="sticky top-24 w-full">
+          <div className="animate-fade-in">
+            <TranscriptNotesPanel
+              key={notesUpdatedKey}
+              videoId={video.id}
+              currentTime={currentTime}
+              onTimestampClick={handleTimestampClick}
+            />
           </div>
         </aside>
       </div>
