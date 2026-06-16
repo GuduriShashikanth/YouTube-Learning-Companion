@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,7 +23,6 @@ class QuizRepository:
         quiz = Quiz(video_id=video_id)
         self.session.add(quiz)
         await self.session.flush()
-        await self.session.refresh(quiz)
 
         for q_data in questions:
             question = QuizQuestion(
@@ -59,3 +58,29 @@ class QuizRepository:
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def delete_by_video_id(self, video_id: UUID) -> None:
+        """Delete all quizzes (and their questions) for a video.
+
+        Uses bulk DELETE SQL to bypass the ORM identity map, then calls
+        expire_all() so subsequent queries within the same transaction
+        hit the DB fresh rather than returning stale cached objects.
+        """
+        # First get the quiz IDs for this video
+        quiz_ids_result = await self.session.execute(
+            select(Quiz.id).where(Quiz.video_id == video_id)
+        )
+        quiz_ids = [row[0] for row in quiz_ids_result]
+
+        if quiz_ids:
+            # Bulk-delete questions then quizzes (respects FK order)
+            await self.session.execute(
+                delete(QuizQuestion).where(QuizQuestion.quiz_id.in_(quiz_ids))
+            )
+            await self.session.execute(
+                delete(Quiz).where(Quiz.id.in_(quiz_ids))
+            )
+            await self.session.flush()
+
+        # Bust the identity map so the next read is fresh
+        self.session.expire_all()

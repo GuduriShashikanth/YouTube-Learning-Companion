@@ -65,11 +65,11 @@ export default function QuizView({ videoId }: QuizViewProps) {
     fetchQuiz();
   }, [fetchQuiz]);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (force: boolean = false) => {
     setGenerating(true);
     setError(null);
     try {
-      const data = await generateQuiz(videoId);
+      const data = await generateQuiz(videoId, force);
       setQuiz(data);
       resetQuiz();
     } catch {
@@ -78,6 +78,8 @@ export default function QuizView({ videoId }: QuizViewProps) {
       setGenerating(false);
     }
   };
+
+  const handleNewQuiz = () => handleGenerate(true);
 
   const resetQuiz = () => {
     setCurrentQuestion(0);
@@ -245,7 +247,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
               Retry
             </button>
             <button
-              onClick={handleGenerate}
+              onClick={handleNewQuiz}
               className="gradient-primary flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25"
             >
               <Sparkles className="h-4 w-4" />

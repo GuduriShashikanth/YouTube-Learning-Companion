@@ -20,39 +20,51 @@ from app.services.llm_service import get_llm_service
 
 logger = get_logger(__name__)
 
-QUIZ_SYSTEM_PROMPT = """You are an expert educational assessment creator. You create high-quality
-multiple-choice questions that test comprehension, analysis, and application of concepts.
-Each question should have exactly 4 options with one correct answer and a brief explanation."""
+QUIZ_SYSTEM_PROMPT = """You are a rigorous academic assessment designer creating university-level
+multiple-choice questions. Your questions must:
+- Test deep understanding, NOT surface-level recall
+- Be phrased as direct, standalone questions — NEVER start with phrases like
+  "According to the transcript", "Based on the video", "As mentioned", or similar
+- Have exactly 4 options where ALL distractors are plausible and tempting;
+  wrong answers must reflect common misconceptions, not obvious nonsense
+- Have only one unambiguously correct answer
+- Include a concise explanation that justifies the correct answer and
+  clarifies why the other options are wrong"""
 
-QUIZ_PROMPT_TEMPLATE = """Based on the following video transcript, create exactly 10 multiple-choice
-questions to test the viewer's understanding of the content.
+QUIZ_PROMPT_TEMPLATE = """Using the video content below as your knowledge source, design exactly 10
+challenging multiple-choice questions.
 
-Requirements:
-- Create exactly 10 questions
-- Each question should have 4 options (a, b, c, d)
-- Only one option should be correct
-- Include a brief explanation for the correct answer
-- Questions should range from recall to analysis level
-- Cover the most important topics from the transcript
-- Return ONLY a valid JSON array, no other text
+STRICT RULES:
+1. Phrase every question as a direct, standalone question — NEVER use
+   "According to the transcript", "Based on the video", "As mentioned", etc.
+2. Questions must test conceptual understanding, cause-effect relationships,
+   comparisons, or application — NOT simple word-spotting from the text.
+3. Every wrong option (distractor) must be a plausible-sounding alternative
+   that a student who partially understood the topic might choose.
+   Bad distractor: "It is primarily used for game development" (obviously wrong)
+   Good distractor: "It optimizes memory allocation at the hardware level" (sounds technical, subtly wrong)
+4. Vary difficulty: 3 medium, 4 hard, 3 very hard questions.
+5. Cover distinct topics — do not repeat similar concepts across questions.
+6. Return ONLY a valid JSON array, no prose, no markdown fences.
 
-Return the questions in this exact JSON format:
+JSON format (return exactly this structure):
 [
     {{
-        "question": "What is the main purpose of...?",
-        "option_a": "First option",
-        "option_b": "Second option",
-        "option_c": "Third option",
-        "option_d": "Fourth option",
+        "question": "Direct, self-contained question text?",
+        "option_a": "Plausible option A",
+        "option_b": "Plausible option B",
+        "option_c": "Plausible option C",
+        "option_d": "Plausible option D",
         "correct_answer": "a",
-        "explanation": "The correct answer is A because..."
+        "explanation": "Concise explanation of why A is correct and why B/C/D are wrong."
     }}
 ]
 
-Transcript:
+Video content:
 {transcript}
 
-Generate exactly 10 quiz questions as a JSON array:"""
+Generate exactly 10 quiz questions as a raw JSON array:"""
+
 
 
 def _parse_quiz_json(response: str) -> list[dict]:
@@ -92,7 +104,7 @@ class QuizService:
         self.video_repo = VideoRepository(session)
         self.llm = get_llm_service()
 
-    async def generate_quiz(self, video_id: UUID) -> Quiz:
+    async def generate_quiz(self, video_id: UUID, force: bool = False) -> Quiz:
         """Generate a quiz for a video using its transcript.
 
         Args:
@@ -111,13 +123,19 @@ class QuizService:
         if not video:
             raise VideoNotFoundError(f"Video not found: {video_id}")
 
-        # Check for existing quiz
+        # Check for existing quiz — skip if force regeneration requested
         existing_quiz = await self.quiz_repo.get_by_video_id(video_id)
-        if existing_quiz:
+        has_valid_quiz = existing_quiz and len(existing_quiz.questions) > 0
+
+        if has_valid_quiz and not force:
             logger.info(
                 f"Quiz already exists for video {video_id}, returning existing."
             )
             return existing_quiz
+
+        if existing_quiz and (force or not has_valid_quiz):
+            logger.info(f"Deleting existing quiz for video {video_id} (force={force}, valid={has_valid_quiz}).")
+            await self.quiz_repo.delete_by_video_id(video_id)
 
         # Get transcript
         transcript = await self.transcript_repo.get_by_video_id(video_id)
@@ -163,6 +181,21 @@ class QuizService:
             "correct_answer",
         }
         validated_questions = []
+
+        # Patterns to strip from question text
+        import re as _re
+        _TRANSCRIPT_PREFIX = _re.compile(
+            r"^(according to (the )?(transcript|video|passage|content|speaker|narrator)[,:]?\s*"
+            r"|based on (the )?(transcript|video|passage|content)[,:]?\s*"
+            r"|as (mentioned|stated|discussed|explained) in (the )?(transcript|video)[,:]?\s*)",
+            _re.IGNORECASE,
+        )
+
+        def _clean_question(text: str) -> str:
+            cleaned = _TRANSCRIPT_PREFIX.sub("", text.strip())
+            # Capitalize first letter after stripping
+            return cleaned[:1].upper() + cleaned[1:] if cleaned else text
+
         for q in quiz_data:
             if isinstance(q, dict) and required_fields.issubset(q.keys()):
                 # Normalize correct_answer to lowercase single letter
@@ -171,7 +204,7 @@ class QuizService:
                     continue
                 validated_questions.append(
                     {
-                        "question": str(q["question"]),
+                        "question": _clean_question(str(q["question"])),
                         "option_a": str(q["option_a"]),
                         "option_b": str(q["option_b"]),
                         "option_c": str(q["option_c"]),

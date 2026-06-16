@@ -4,10 +4,9 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.repositories.transcript_repo import TranscriptRepository
 from app.schemas.transcript import TranscriptResponse
@@ -15,18 +14,6 @@ from app.schemas.video import VideoListResponse, VideoProcessRequest, VideoRespo
 from app.services.video_service import VideoService
 
 router = APIRouter()
-
-# Default user ID for simplified auth (no real auth system yet)
-DEFAULT_USER_ID = uuid.UUID("00000000-0000-0000-0000-000000000001")
-DEFAULT_USER_EMAIL = "default@learntube.app"
-
-
-async def ensure_default_user(session: AsyncSession) -> None:
-    """Create the default user if it doesn't already exist."""
-    result = await session.execute(select(User).where(User.id == DEFAULT_USER_ID))
-    if not result.scalar_one_or_none():
-        session.add(User(id=DEFAULT_USER_ID, email=DEFAULT_USER_EMAIL))
-        await session.flush()
 
 
 @router.post(
@@ -38,6 +25,7 @@ async def ensure_default_user(session: AsyncSession) -> None:
 async def process_video(
     request: VideoProcessRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> VideoResponse:
     """Process a YouTube video: fetch transcript, store data, create embeddings.
 
@@ -45,12 +33,12 @@ async def process_video(
     - Fetches the transcript from YouTube
     - Stores the video and transcript in the database
     - Creates vector embeddings for RAG
+    - Associates the video with the authenticated user
     """
-    await ensure_default_user(db)
     service = VideoService(db)
     result = await service.process_video(
         youtube_url=request.youtube_url,
-        user_id=DEFAULT_USER_ID,
+        user_id=current_user.id,
     )
     return VideoResponse.model_validate(result["video"])
 
@@ -63,6 +51,7 @@ async def process_video(
 async def get_transcript(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> TranscriptResponse:
     """Get the full transcript (text + timestamps) for a video."""
     repo = TranscriptRepository(db)
@@ -83,6 +72,7 @@ async def get_transcript(
 async def get_video(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> VideoResponse:
     """Get a video by its UUID."""
     service = VideoService(db)
@@ -93,17 +83,18 @@ async def get_video(
 @router.get(
     "",
     response_model=VideoListResponse,
-    summary="List all videos",
+    summary="List all videos for the current user",
 )
 async def list_videos(
     db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
     skip: Annotated[int, Query(ge=0)] = 0,
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> VideoListResponse:
-    """List all processed videos with pagination."""
+    """List all processed videos for the authenticated user, with pagination."""
     service = VideoService(db)
     result = await service.list_videos(
-        user_id=DEFAULT_USER_ID,
+        user_id=current_user.id,
         skip=skip,
         limit=limit,
     )
@@ -111,4 +102,3 @@ async def list_videos(
         videos=[VideoResponse.model_validate(v) for v in result["videos"]],
         total=result["total"],
     )
-

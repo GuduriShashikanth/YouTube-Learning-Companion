@@ -6,7 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
+from app.models.user import User
 from app.schemas.note import NoteResponse
 from app.services.note_service import NoteService
 
@@ -22,6 +23,7 @@ router = APIRouter()
 async def generate_notes(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
 ) -> NoteResponse:
     """Generate AI-powered study notes from a video's transcript.
 
@@ -41,6 +43,7 @@ async def generate_notes(
 async def get_notes(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
 ) -> NoteResponse:
     """Get existing study notes for a video.
 

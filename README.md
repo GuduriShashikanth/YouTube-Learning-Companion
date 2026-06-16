@@ -1,24 +1,25 @@
 # 🎓 YouTube Learning Companion
 
-A production-ready full-stack application that transforms YouTube videos into interactive study materials. Paste a YouTube URL and get structured notes, flashcards, quizzes, and AI-powered Q&A — all with timestamp references.
+Transform any YouTube video into a full interactive study session. Paste a URL and instantly get AI-generated notes, flashcards, quizzes, and a RAG-powered chat — all with timestamp references.
 
 ## ✨ Features
 
 | Feature | Description |
 |---------|-------------|
-| 📝 **Structured Notes** | AI-generated study notes with headings, bullet points, and key takeaways |
-| 🃏 **Flashcards** | 20 interactive Q&A flashcards per video |
-| 📋 **Quizzes** | 10 MCQs with explanations and scoring |
-| 💬 **RAG Chat** | Ask questions about the video with context-aware answers |
-| ⏱️ **Timestamps** | Click-to-seek timestamp references throughout |
-| 📄 **Transcripts** | Full transcript with searchable, clickable segments |
+| 📝 **Smart Notes** | AI-generated structured notes with headings, key concepts, and bullet points |
+| 🃏 **Flashcards** | 20 Q&A study cards per video shown inline — no flip needed |
+| 📋 **Adaptive Quiz** | 10 challenging MCQs with plausible distractors, scoring, and explanations |
+| 💬 **RAG Chat** | Ask anything about the video — answers grounded in the transcript with timestamps |
+| ⏱️ **Timestamps** | Click-to-seek timestamp links throughout notes and transcripts |
+| 📄 **Full Transcript** | Searchable, clickable transcript segments synced to the video player |
+| 🕓 **Video History** | Sidebar showing all previously processed videos for quick re-access |
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Frontend (React + TS)                  │
-│              Tailwind CSS • Vite • Axios                 │
+│                   Frontend (React + TS)                   │
+│              Vanilla CSS · Vite · Axios                  │
 └─────────────────────┬───────────────────────────────────┘
                       │ HTTP (REST API)
 ┌─────────────────────▼───────────────────────────────────┐
@@ -28,12 +29,12 @@ A production-ready full-stack application that transforms YouTube videos into in
 │  └──────────┘  └────┬─────┘  └──────────┘               │
 │                     │                                     │
 │               ┌─────▼─────┐                              │
-│               │    RAG    │→ ChromaDB                     │
+│               │    RAG    │→ ChromaDB (vector store)     │
 │               │ Pipeline  │→ Sentence Transformers        │
 │               └─────┬─────┘                              │
 │                     │                                     │
 │               ┌─────▼─────┐                              │
-│               │  Gemini   │ (or OpenAI)                   │
+│               │   Groq    │ (or Gemini / OpenAI)          │
 │               │    LLM    │                               │
 │               └───────────┘                              │
 └─────────────────────────────────────────────────────────┘
@@ -42,19 +43,19 @@ A production-ready full-stack application that transforms YouTube videos into in
 ## 🛠️ Tech Stack
 
 ### Backend
-- **Framework**: FastAPI 0.136.3
+- **Framework**: FastAPI 0.136+
 - **Python**: 3.12+
 - **Database**: PostgreSQL + SQLAlchemy 2.0 (async)
 - **Migrations**: Alembic
 - **Validation**: Pydantic v2
-- **LLM**: Google Gemini (free tier) / OpenAI
-- **RAG**: LangChain + ChromaDB + Sentence Transformers
+- **LLM**: Groq (`llama-3.3-70b-versatile`) / Google Gemini / OpenAI
+- **RAG**: LangChain + ChromaDB + Sentence Transformers (`all-MiniLM-L6-v2`)
 - **Transcripts**: youtube-transcript-api
 
 ### Frontend
 - **Framework**: React 19 + TypeScript
 - **Build Tool**: Vite
-- **Styling**: Tailwind CSS v4
+- **Styling**: Vanilla CSS
 - **HTTP Client**: Axios
 - **Icons**: Lucide React
 
@@ -65,7 +66,7 @@ A production-ready full-stack application that transforms YouTube videos into in
 - **Python 3.12+**
 - **Node.js 18+** and npm
 - **PostgreSQL 16** (running locally)
-- **Gemini API Key** (free at [aistudio.google.com](https://aistudio.google.com))
+- **Groq API Key** (free at [console.groq.com](https://console.groq.com)) — or use Gemini / OpenAI
 
 ### 1. Clone & Setup Database
 
@@ -92,11 +93,20 @@ pip install -r requirements.txt
 # Configure environment
 copy .env.example .env       # Windows
 # cp .env.example .env       # macOS/Linux
+```
 
-# Edit .env with your settings:
-# - DATABASE_URL (your PostgreSQL connection string)
-# - GEMINI_API_KEY (from Google AI Studio)
+Edit `.env` with your settings — minimum required:
 
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:<password>@localhost:5432/youtube_companion
+
+# Choose one LLM provider
+LLM_PROVIDER=groq
+GROQ_API_KEY=your-groq-key-here
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+```bash
 # Run database migrations
 alembic upgrade head
 
@@ -104,21 +114,17 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`.
+API available at `http://localhost:8000` · Docs at `http://localhost:8000/docs`
 
 ### 3. Frontend Setup
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`.
+Frontend available at `http://localhost:5173`.
 
 ## 📡 API Reference
 
@@ -131,24 +137,6 @@ All endpoints are prefixed with `/api/v1`.
 | `POST` | `/videos/process` | Process a YouTube video |
 | `GET` | `/videos/{video_id}` | Get video details |
 | `GET` | `/videos/` | List all videos |
-
-#### Process Video
-```bash
-curl -X POST http://localhost:8000/api/v1/videos/process \
-  -H "Content-Type: application/json" \
-  -d '{"youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"}'
-```
-
-**Response:**
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "youtube_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-  "youtube_video_id": "dQw4w9WgXcQ",
-  "title": "Video Title",
-  "created_at": "2024-01-01T00:00:00Z"
-}
-```
 
 ### Notes
 
@@ -169,42 +157,21 @@ curl -X POST http://localhost:8000/api/v1/videos/process \
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/videos/{video_id}/quiz` | Generate 10 MCQs |
+| `POST` | `/videos/{video_id}/quiz?force=true` | Regenerate a brand-new quiz |
 | `GET` | `/videos/{video_id}/quiz` | Get existing quiz |
 
 ### Chat (RAG)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/videos/{video_id}/chat` | Ask a question |
+| `POST` | `/videos/{video_id}/chat` | Ask a question about the video |
 | `GET` | `/videos/{video_id}/chat/history` | Get chat history |
 
-#### Ask a Question
-```bash
-curl -X POST http://localhost:8000/api/v1/videos/{video_id}/chat \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What is the main topic discussed?"}'
-```
-
-**Response:**
-```json
-{
-  "answer": "The main topic discussed is...",
-  "sources": [
-    {
-      "text": "Relevant transcript segment...",
-      "start_time": 120.5,
-      "end_time": 135.0
-    }
-  ],
-  "video_id": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-### Health Check
+### Health
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/health` | Check API health |
+| `GET` | `/health` | Check API status |
 
 ## 📁 Project Structure
 
@@ -216,26 +183,25 @@ Utube/
 │   ├── .env.example
 │   ├── alembic.ini
 │   ├── alembic/              # Database migrations
-│   ├── app/
-│   │   ├── main.py           # FastAPI entry point
-│   │   ├── api/              # Route handlers
-│   │   ├── core/             # Config, logging, exceptions
-│   │   ├── db/               # Database engine & base models
-│   │   ├── models/           # SQLAlchemy ORM models
-│   │   ├── schemas/          # Pydantic request/response models
-│   │   ├── repositories/     # Database CRUD operations
-│   │   ├── services/         # Business logic
-│   │   ├── rag/              # RAG pipeline (chunking, embeddings, retrieval)
-│   │   └── utils/            # YouTube helpers
-│   └── tests/
+│   └── app/
+│       ├── main.py           # FastAPI entry point
+│       ├── api/              # Route handlers
+│       ├── core/             # Config, logging, exceptions
+│       ├── db/               # Database engine & base models
+│       ├── models/           # SQLAlchemy ORM models
+│       ├── schemas/          # Pydantic request/response models
+│       ├── repositories/     # Database CRUD operations
+│       ├── services/         # Business logic + LLM prompts
+│       ├── rag/              # RAG pipeline (chunking, embeddings, retrieval)
+│       └── utils/            # YouTube helpers
 └── frontend/
     ├── package.json
     ├── vite.config.ts
     └── src/
         ├── App.tsx
-        ├── api/              # API client
+        ├── api/              # Axios API client
         ├── components/       # UI components
-        ├── pages/            # Page components
+        ├── pages/            # Page-level components
         └── types/            # TypeScript interfaces
 ```
 
@@ -244,14 +210,16 @@ Utube/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql+asyncpg://...` | PostgreSQL connection string |
-| `LLM_PROVIDER` | `gemini` | LLM provider (`gemini` or `openai`) |
+| `LLM_PROVIDER` | `groq` | LLM provider: `groq`, `gemini`, or `openai` |
+| `GROQ_API_KEY` | — | Groq API key |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model name |
 | `GEMINI_API_KEY` | — | Google Gemini API key |
-| `OPENAI_API_KEY` | — | OpenAI API key (if using OpenAI) |
 | `GEMINI_MODEL` | `gemini-2.0-flash` | Gemini model name |
+| `OPENAI_API_KEY` | — | OpenAI API key |
 | `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model name |
 | `CHROMA_PERSIST_DIR` | `./chroma_data` | ChromaDB storage directory |
-| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence Transformer model |
-| `LOG_LEVEL` | `INFO` | Logging level |
+| `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | Sentence Transformer model for embeddings |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
 | `CORS_ORIGINS` | `["http://localhost:5173"]` | Allowed CORS origins |
 
 ## 🧪 Running Tests
@@ -266,23 +234,15 @@ pytest tests/ -v
 ```bash
 cd backend
 
-# Create a new migration
+# Create a new migration after model changes
 alembic revision --autogenerate -m "description"
 
-# Apply migrations
+# Apply all pending migrations
 alembic upgrade head
 
 # Rollback one migration
 alembic downgrade -1
 ```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📄 License
 

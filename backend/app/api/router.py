@@ -2,12 +2,15 @@
 
 from fastapi import APIRouter
 
-from app.api import chat, flashcards, health, notes, quizzes, videos
+from app.api import auth, chat, flashcards, health, notes, quizzes, videos
 
 api_router = APIRouter()
 
 # Health check
 api_router.include_router(health.router, prefix="/health", tags=["Health"])
+
+# Auth — signup and signin
+api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 
 # Video CRUD
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])

@@ -39,11 +39,22 @@ class VideoRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_by_youtube_id(self, youtube_video_id: str) -> Video | None:
-        """Get a video by its YouTube video ID."""
-        stmt = select(Video).where(Video.youtube_video_id == youtube_video_id)
+    async def get_by_user_and_youtube_id(
+        self, user_id: UUID, youtube_video_id: str
+    ) -> Video | None:
+        """Get a video by its YouTube video ID for a specific user."""
+        stmt = select(Video).where(
+            Video.user_id == user_id,
+            Video.youtube_video_id == youtube_video_id
+        )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_youtube_id(self, youtube_video_id: str) -> list[Video]:
+        """Get all video records for a YouTube video ID."""
+        stmt = select(Video).where(Video.youtube_video_id == youtube_video_id)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def list_by_user(
         self, user_id: UUID, skip: int = 0, limit: int = 20

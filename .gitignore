@@ -21,6 +21,7 @@ yarn-error.log*
 out/
 
 # Python / Backend
+backend/chroma_data/
 __pycache__/
 *.py[cod]
 *$py.class

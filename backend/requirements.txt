@@ -3,6 +3,7 @@ uvicorn[standard]
 python-dotenv
 pydantic>=2.13
 pydantic-settings
+pydantic[email]
 sqlalchemy[asyncio]==2.0.50
 asyncpg
 alembic==1.18.4
@@ -20,3 +21,8 @@ youtube-transcript-api
 httpx
 pytest
 pytest-asyncio
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+python-multipart

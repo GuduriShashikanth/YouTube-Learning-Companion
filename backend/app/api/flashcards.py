@@ -6,7 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
+from app.models.user import User
 from app.schemas.flashcard import FlashcardListResponse, FlashcardResponse
 from app.services.flashcard_service import FlashcardService
 
@@ -22,6 +23,7 @@ router = APIRouter()
 async def generate_flashcards(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
 ) -> FlashcardListResponse:
     """Generate AI-powered flashcards from a video's transcript.
 
@@ -43,6 +45,7 @@ async def generate_flashcards(
 async def get_flashcards(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
 ) -> FlashcardListResponse:
     """Get existing flashcards for a video.
 

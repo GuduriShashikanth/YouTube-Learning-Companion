@@ -7,6 +7,7 @@ import type {
   Quiz,
   ChatResponse,
   ChatHistoryItem,
+  TokenResponse,
 } from '../types';
 
 const api = axios.create({
@@ -15,6 +16,61 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// ─── Request interceptor — inject Bearer token ───────────────────────
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ─── Response interceptor — catch 401, clear token ──────────────────
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Only clear token on 401s from protected resource endpoints,
+      // NOT from the auth endpoints themselves (signup/signin return 401 for bad creds)
+      const url: string = error.config?.url ?? '';
+      const isAuthEndpoint = url.includes('/auth/signin') || url.includes('/auth/signup');
+      if (!isAuthEndpoint) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('user');
+        // Notify AuthContext via a custom event (avoids hard page reload)
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ─── Auth endpoints ─────────────────────────────────────────────────
+
+export async function signUp(
+  email: string,
+  password: string
+): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/auth/signup', {
+    email,
+    password,
+  });
+  return data;
+}
+
+export async function signIn(
+  email: string,
+  password: string
+): Promise<TokenResponse> {
+  const { data } = await api.post<TokenResponse>('/auth/signin', {
+    email,
+    password,
+  });
+  return data;
+}
 
 // ─── Video endpoints ────────────────────────────────────────────────
 
@@ -35,7 +91,7 @@ export async function getVideos(
   limit: number = 20
 ): Promise<{ videos: Video[]; total: number }> {
   const { data } = await api.get<{ videos: Video[]; total: number }>(
-    '/videos/',
+    '/videos',
     { params: { skip, limit } }
   );
   return data;
@@ -80,8 +136,10 @@ export async function getFlashcards(
 
 // ─── Quiz endpoints ─────────────────────────────────────────────────
 
-export async function generateQuiz(videoId: string): Promise<Quiz> {
-  const { data } = await api.post<Quiz>(`/videos/${videoId}/quiz`);
+export async function generateQuiz(videoId: string, force: boolean = false): Promise<Quiz> {
+  const { data } = await api.post<Quiz>(`/videos/${videoId}/quiz`, null, {
+    params: force ? { force: true } : undefined,
+  });
   return data;
 }
 

@@ -6,7 +6,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_db
+from app.core.dependencies import get_current_user, get_db
+from app.models.user import User
 from app.schemas.chat import ChatHistoryItem, ChatRequest, ChatResponse, ChatSource
 from app.services.chat_service import ChatService
 
@@ -22,6 +23,7 @@ async def ask_question(
     video_id: uuid.UUID,
     request: ChatRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
 ) -> ChatResponse:
     """Ask a question about a video using RAG.
 
@@ -48,6 +50,7 @@ async def ask_question(
 async def get_chat_history(
     video_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
     limit: Annotated[int, Query(ge=1, le=200)] = 50,
 ) -> list[ChatHistoryItem]:
     """Get the chat history for a specific video.

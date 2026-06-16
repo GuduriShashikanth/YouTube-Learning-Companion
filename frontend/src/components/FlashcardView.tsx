@@ -5,7 +5,6 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  RotateCcw,
   Layers,
 } from 'lucide-react';
 import { getFlashcards, generateFlashcards } from '../api/client';
@@ -21,7 +20,6 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
 
   const fetchFlashcards = useCallback(async () => {
     setLoading(true);
@@ -47,7 +45,6 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
       const data = await generateFlashcards(videoId);
       setFlashcards(data.flashcards);
       setCurrentIndex(0);
-      setIsFlipped(false);
     } catch {
       setError('Failed to generate flashcards. Please try again.');
     } finally {
@@ -57,20 +54,14 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
 
   const goNext = () => {
     if (currentIndex < flashcards.length - 1) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex((i) => i + 1), 150);
+      setCurrentIndex((i) => i + 1);
     }
   };
 
   const goPrev = () => {
     if (currentIndex > 0) {
-      setIsFlipped(false);
-      setTimeout(() => setCurrentIndex((i) => i - 1), 150);
+      setCurrentIndex((i) => i - 1);
     }
-  };
-
-  const handleFlip = () => {
-    setIsFlipped((f) => !f);
   };
 
   if (loading) {
@@ -94,8 +85,7 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
           Generate Flashcards
         </h3>
         <p className="mx-auto mb-6 max-w-md text-sm text-text-muted">
-          Create interactive flashcards from the video content for effective
-          spaced repetition learning.
+          Create study cards from the video content for effective learning.
         </p>
         {error && (
           <div className="animate-fade-in-down mx-auto mb-4 flex max-w-md items-center justify-center gap-2 text-sm text-error-light">
@@ -174,43 +164,34 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
         />
       </div>
 
-      {/* Flashcard with 3D flip */}
-      <div
-        className="perspective-1000 mx-auto mb-6 max-w-xl cursor-pointer"
-        onClick={handleFlip}
-      >
-        <div
-          className={`preserve-3d relative transition-transform duration-500 ${
-            isFlipped ? 'rotate-y-180' : ''
-          }`}
-          style={{ minHeight: '280px' }}
-        >
-          {/* Front - Question */}
-          <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-surface-light/30 bg-gradient-to-br from-surface via-surface-dark to-surface p-8 shadow-xl">
-            <div className="mb-4 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary-light">
-              QUESTION
-            </div>
-            <p className="text-center text-lg font-medium leading-relaxed text-text">
-              {card.question}
-            </p>
-            <p className="mt-6 text-xs text-text-dim">Click to reveal answer</p>
+      {/* Flashcard — Question then Answer */}
+      <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-surface-light/30 bg-gradient-to-br from-surface via-surface-dark to-surface shadow-xl">
+        {/* Question section */}
+        <div className="flex flex-col items-center px-8 pt-8 pb-5">
+          <div className="mb-4 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary-light">
+            QUESTION
           </div>
+          <p className="text-center text-lg font-medium leading-relaxed text-text">
+            {card.question}
+          </p>
+        </div>
 
-          {/* Back - Answer */}
-          <div className="backface-hidden rotate-y-180 absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-surface-dark to-accent/5 p-8 shadow-xl">
-            <div className="mb-4 rounded-full bg-success/10 px-3 py-1 text-xs font-medium text-success">
-              ANSWER
-            </div>
-            <p className="text-center text-base leading-relaxed text-text-muted">
-              {card.answer}
-            </p>
-            <p className="mt-6 text-xs text-text-dim">Click to see question</p>
+        {/* Divider */}
+        <div className="mx-8 border-t border-surface-light/40" />
+
+        {/* Answer section */}
+        <div className="flex flex-col items-center px-8 pt-5 pb-8">
+          <div className="mb-3 rounded-full bg-success/10 px-3 py-1 text-xs font-medium text-success">
+            ANSWER
           </div>
+          <p className="text-center text-base leading-relaxed text-text-muted">
+            {card.answer}
+          </p>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-4">
         <button
           onClick={goPrev}
           disabled={currentIndex === 0}
@@ -219,13 +200,9 @@ export default function FlashcardView({ videoId }: FlashcardViewProps) {
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <button
-          onClick={handleFlip}
-          className="flex items-center gap-2 rounded-xl border border-surface-light/30 px-4 py-2 text-sm font-medium text-text-muted transition-all duration-200 hover:border-primary/30 hover:bg-surface-light/30 hover:text-text"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Flip
-        </button>
+        <span className="text-xs text-text-dim">
+          {currentIndex + 1} of {flashcards.length}
+        </span>
 
         <button
           onClick={goNext}

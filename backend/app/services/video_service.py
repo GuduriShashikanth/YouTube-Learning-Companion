@@ -33,6 +33,11 @@ class VideoService:
     async def process_video(self, youtube_url: str, user_id: UUID) -> dict:
         """Process a YouTube video: fetch transcript, store data, create embeddings.
 
+        If the current user already has this video, returns the existing record.
+        If another user already processed the same YouTube URL, reuses that
+        transcript data (skipping the YouTube API call) and creates a new isolated
+        Video+Transcript record for this user.
+
         Args:
             youtube_url: The full YouTube video URL.
             user_id: The ID of the user processing the video.
@@ -53,10 +58,14 @@ class VideoService:
 
         logger.info(f"Processing video: {video_id_str} for user: {user_id}")
 
-        # 2. Check if the video already exists
-        existing_video = await self.video_repo.get_by_youtube_id(video_id_str)
+        # 2. Check if THIS user already has this video → return early
+        existing_video = await self.video_repo.get_by_user_and_youtube_id(
+            user_id, video_id_str
+        )
         if existing_video:
-            logger.info(f"Video {video_id_str} already exists in database.")
+            logger.info(
+                f"Video {video_id_str} already exists for user {user_id}. Returning cached."
+            )
             existing_transcript = await self.transcript_repo.get_by_video_id(
                 existing_video.id
             )
@@ -70,27 +79,45 @@ class VideoService:
                 "already_exists": True,
             }
 
-        # 3. Fetch transcript from YouTube
-        full_text, timestamps = await self.transcript_service.fetch_transcript(
-            video_id_str
-        )
+        # 3. Check if ANY other user has already processed this YouTube video.
+        #    If yes, reuse their transcript to avoid a redundant YouTube API call.
+        other_videos = await self.video_repo.get_by_youtube_id(video_id_str)
+        source_transcript = None
+        if other_videos:
+            source_transcript = await self.transcript_repo.get_by_video_id(
+                other_videos[0].id
+            )
+            if source_transcript:
+                logger.info(
+                    f"Video {video_id_str} already processed by another user. "
+                    "Reusing existing transcript."
+                )
 
-        # 4. Create Video record
+        # 4. Fetch transcript from YouTube only if we don't have it cached
+        if source_transcript:
+            full_text = source_transcript.transcript_text
+            timestamps = source_transcript.timestamps
+        else:
+            full_text, timestamps = await self.transcript_service.fetch_transcript(
+                video_id_str
+            )
+
+        # 5. Create a fresh Video record for THIS user
         video = await self.video_repo.create(
             user_id=user_id,
             youtube_url=youtube_url,
             youtube_video_id=video_id_str,
-            title=None,  # Title could be fetched separately if needed
+            title=None,
         )
 
-        # 5. Create Transcript record
-        transcript = await self.transcript_repo.create(
+        # 6. Create a fresh Transcript record for THIS user's video
+        await self.transcript_repo.create(
             video_id=video.id,
             transcript_text=full_text,
             timestamps=timestamps,
         )
 
-        # 6. Chunk transcript and store embeddings in ChromaDB
+        # 7. Chunk transcript and store embeddings in ChromaDB under this user's video id
         try:
             documents = chunk_transcript(full_text, timestamps)
             await self.vector_store.add_documents(
@@ -102,7 +129,6 @@ class VideoService:
         except Exception as e:
             logger.error(f"Failed to store embeddings for video {video.id}: {e}")
             # Don't fail the whole operation if embedding storage fails
-            # The video and transcript are still saved
 
         return {
             "video": video,
