@@ -14,9 +14,10 @@ import type { Note } from '../types';
 interface NotesViewProps {
   videoId: string;
   onNotesGenerated?: () => void;
+  isSidebar?: boolean;
 }
 
-export default function NotesView({ videoId, onNotesGenerated }: NotesViewProps) {
+export default function NotesView({ videoId, onNotesGenerated, isSidebar }: NotesViewProps) {
   const [notes, setNotes] = useState<Note | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -67,7 +68,7 @@ export default function NotesView({ videoId, onNotesGenerated }: NotesViewProps)
 
   if (loading) {
     return (
-      <div className="glass p-8 bg-white border border-surface-light">
+      <div className={isSidebar ? "p-4 bg-white" : "glass p-8 bg-white border border-surface-light"}>
         <div className="flex items-center justify-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-[#E11D48]" />
           <span className="text-sm font-medium text-text-muted">Loading summary...</span>
@@ -78,7 +79,7 @@ export default function NotesView({ videoId, onNotesGenerated }: NotesViewProps)
 
   if (!notes && !generating) {
     return (
-      <div className="glass animate-scale-in p-10 text-center bg-white border border-surface-light">
+      <div className={isSidebar ? "animate-scale-in p-4 text-center bg-white" : "glass animate-scale-in p-10 text-center bg-white border border-surface-light"}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
           <BookOpen className="h-8 w-8 text-[#E11D48]" />
         </div>
@@ -108,7 +109,7 @@ export default function NotesView({ videoId, onNotesGenerated }: NotesViewProps)
 
   if (generating) {
     return (
-      <div className="glass p-12 text-center bg-white border border-surface-light">
+      <div className={isSidebar ? "p-4 text-center bg-white" : "glass p-12 text-center bg-white border border-surface-light"}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
           <Loader2 className="h-8 w-8 animate-spin text-[#E11D48]" />
         </div>
@@ -132,43 +133,43 @@ export default function NotesView({ videoId, onNotesGenerated }: NotesViewProps)
   }
 
   return (
-    <div className="glass animate-fade-in bg-white border border-surface-light overflow-hidden">
+    <div className={isSidebar ? "flex flex-col h-full bg-white select-none animate-fade-in" : "glass animate-fade-in bg-white border border-surface-light overflow-hidden"}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-surface-light px-6 py-4 bg-surface-dark bg-opacity-10">
+      <div className="flex items-center justify-between border-b border-surface-light px-4 py-3 bg-surface-dark bg-opacity-10">
         <div className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-[#E11D48]" />
-          <h3 className="text-sm font-bold text-text uppercase tracking-wider">Lesson Summary</h3>
+          <BookOpen className="h-4 w-4 text-[#E11D48]" />
+          <h3 className="text-xs font-bold text-text uppercase tracking-wider">Lesson Summary</h3>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-light transition-all duration-150"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-2 py-1 text-[11px] font-semibold text-text hover:bg-surface-light transition-all duration-150"
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-[#15803D]" />
+                <Check className="h-3 w-3 text-[#15803D]" />
                 Copied!
               </>
             ) : (
               <>
-                <Copy className="h-3.5 w-3.5 text-text-muted" />
-                Copy Text
+                <Copy className="h-3 w-3 text-text-muted" />
+                Copy
               </>
             )}
           </button>
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-3 py-1.5 text-xs font-semibold text-text hover:bg-surface-light transition-all duration-150"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-2 py-1 text-[11px] font-semibold text-text hover:bg-surface-light transition-all duration-150"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[#E11D48]" />
-            Regenerate
+            <Sparkles className="h-3 w-3 text-[#E11D48]" />
+            Regen
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-6">
+      <div className="p-4 overflow-y-auto flex-1 max-h-[500px]">
         <div className="prose-custom max-w-none text-text">
           <ReactMarkdown>{notes?.generated_notes || ''}</ReactMarkdown>
         </div>

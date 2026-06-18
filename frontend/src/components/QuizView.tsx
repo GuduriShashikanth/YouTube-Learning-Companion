@@ -15,6 +15,7 @@ import type { Quiz, QuizQuestion } from '../types';
 
 interface QuizViewProps {
   videoId: string;
+  isSidebar?: boolean;
 }
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D'] as const;
@@ -33,7 +34,7 @@ const OPTION_COLORS = {
   incorrect: 'border-red-300 bg-red-50/40 text-text',
 };
 
-export default function QuizView({ videoId }: QuizViewProps) {
+export default function QuizView({ videoId, isSidebar }: QuizViewProps) {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -132,7 +133,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
 
   if (loading) {
     return (
-      <div className="glass p-8 bg-white border border-surface-light">
+      <div className={isSidebar ? "p-4 bg-white" : "glass p-8 bg-white border border-surface-light"}>
         <div className="flex items-center justify-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-[#E11D48]" />
           <span className="text-sm font-medium text-text-muted">Loading quiz...</span>
@@ -143,7 +144,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
 
   if ((!quiz || quiz.questions.length === 0) && !generating) {
     return (
-      <div className="glass animate-scale-in p-10 text-center bg-white border border-surface-light">
+      <div className={isSidebar ? "animate-scale-in p-4 text-center bg-white" : "glass animate-scale-in p-10 text-center bg-white border border-surface-light"}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
           <Brain className="h-8 w-8 text-[#E11D48]" />
         </div>
@@ -173,7 +174,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
 
   if (generating) {
     return (
-      <div className="glass p-12 text-center bg-white border border-surface-light">
+      <div className={isSidebar ? "p-4 text-center bg-white" : "glass p-12 text-center bg-white border border-surface-light"}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
           <Loader2 className="h-8 w-8 animate-spin text-[#E11D48]" />
         </div>
@@ -209,7 +210,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
     const grade = getGrade();
 
     return (
-      <div className="glass animate-scale-in p-8 bg-white border border-surface-light">
+      <div className={isSidebar ? "animate-scale-in p-4 bg-white overflow-y-auto max-h-[500px]" : "glass animate-scale-in p-8 bg-white border border-surface-light"}>
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
             <Trophy className="h-10 w-10 text-amber-500" />
@@ -297,7 +298,7 @@ export default function QuizView({ videoId }: QuizViewProps) {
   const question = quiz.questions[currentQuestion];
 
   return (
-    <div className="glass animate-fade-in p-6 bg-white border border-surface-light">
+    <div className={isSidebar ? "flex flex-col h-full bg-white select-none animate-fade-in p-4 overflow-y-auto max-h-[500px]" : "glass animate-fade-in p-6 bg-white border border-surface-light"}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">

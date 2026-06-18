@@ -5,6 +5,9 @@ import { type ReactNode } from 'react';
 import HomePage from './pages/HomePage';
 import VideoPage from './pages/VideoPage';
 import AuthPage from './pages/AuthPage';
+import LandingPage from './pages/LandingPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // ─── Protected route wrapper ─────────────────────────────────────────
@@ -21,7 +24,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  return user ? <>{children}</> : <Navigate to="/auth" replace />;
+  return user ? <>{children}</> : <Navigate to="/signin" replace />;
 }
 
 // ─── Header with auth controls ───────────────────────────────────────
@@ -32,7 +35,7 @@ function AppHeader() {
 
   const handleSignOut = () => {
     signOut();
-    navigate('/auth');
+    navigate('/');
   };
 
   return (
@@ -66,7 +69,7 @@ function AppHeader() {
               <button
                 id="header-signout-btn"
                 onClick={handleSignOut}
-                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-all duration-200 hover:bg-red-500/10 hover:text-red-400"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-all duration-200 hover:bg-red-50/10 hover:text-red-400 cursor-pointer"
                 aria-label="Sign out"
               >
                 <LogOut className="h-4 w-4" />
@@ -74,12 +77,20 @@ function AppHeader() {
               </button>
             </>
           ) : (
-            <Link
-              to="/auth"
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-all duration-200 hover:bg-surface-light/50 hover:text-text"
-            >
-              Sign in
-            </Link>
+            <div className="flex items-center gap-1.5">
+              <Link
+                to="/signin"
+                className="rounded-lg px-3.5 py-1.5 text-xs font-bold text-text-muted transition-all duration-200 hover:bg-surface-light/50 hover:text-text"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                className="rounded-lg bg-primary text-white px-3.5 py-1.5 text-xs font-bold transition-all duration-200 hover:bg-primary-light hover:shadow-sm hover:shadow-primary/20"
+              >
+                Get Started
+              </Link>
+            </div>
           )}
         </nav>
       </div>
@@ -90,8 +101,10 @@ function AppHeader() {
 // ─── App shell ───────────────────────────────────────────────────────
 
 function AppShell() {
+  const { user } = useAuth();
+
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-surface-dark/5 flex flex-col justify-between">
       {/* Animated Background Orbs */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div
@@ -128,39 +141,38 @@ function AppShell() {
         />
       </div>
 
-      <AppHeader />
+      <div>
+        <AppHeader />
 
-      {/* Main Content */}
-      <main className="relative z-10">
-        <Routes>
-          {/* Public */}
-          <Route path="/auth" element={<AuthPage />} />
+        {/* Main Content */}
+        <main className="relative z-10 flex-1">
+          <Routes>
+            {/* Public or Dashboard based on Auth */}
+            <Route path="/" element={user ? <HomePage /> : <LandingPage />} />
+            
+            {/* Auth Pages */}
+            <Route path="/signin" element={user ? <Navigate to="/" replace /> : <SignInPage />} />
+            <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignUpPage />} />
+            <Route path="/auth" element={<AuthPage />} />
 
-          {/* Protected */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/video/:videoId"
-            element={
-              <ProtectedRoute>
-                <VideoPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected */}
+            <Route
+              path="/video/:videoId"
+              element={
+                <ProtectedRoute>
+                  <VideoPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
 
       {/* Footer */}
-      <footer className="relative z-10 mt-16 border-t border-surface-light/30 py-8 text-center text-sm text-text-dim">
+      <footer className="relative z-10 mt-16 border-t border-surface-light/30 py-8 text-center text-sm text-text-dim bg-white/20 backdrop-blur-sm">
         <p>YouTube Learning Companion &middot; Transform videos into knowledge</p>
       </footer>
     </div>
