@@ -57,9 +57,12 @@ export default function Sidebar({ currentVideoId }: SidebarProps) {
                   {/* Thumbnail */}
                   <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-surface-light/30">
                     <img
-                      src={`https://img.youtube.com/vi/${video.youtube_video_id}/default.jpg`}
+                      src={video.thumbnail_url || `https://img.youtube.com/vi/${video.youtube_video_id}/default.jpg`}
                       alt=""
                       className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://img.youtube.com/vi/${video.youtube_video_id}/default.jpg`;
+                      }}
                     />
                     {isActive && (
                       <div className="absolute inset-0 flex items-center justify-center bg-primary/30">
@@ -77,12 +80,15 @@ export default function Sidebar({ currentVideoId }: SidebarProps) {
                     >
                       {video.title || 'Untitled Video'}
                     </p>
-                    <div className="mt-1 flex items-center gap-1 text-[10px] text-text-dim">
-                      <Clock className="h-2.5 w-2.5" />
-                      {new Date(video.created_at).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                    <div className="mt-1 flex items-center justify-between text-[9px] text-text-dim">
+                      <span className="font-semibold truncate max-w-[80px]">{video.channel_name || 'YouTube'}</span>
+                      <div className="flex items-center gap-0.5">
+                        <Clock className="h-2.5 w-2.5" />
+                        {new Date(video.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </div>
                     </div>
                   </div>
                 </Link>

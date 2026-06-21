@@ -4,12 +4,15 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.note import NoteResponse
 from app.services.note_service import NoteService
+from app.repositories.video_repo import VideoRepository
+from app.utils.pdf_generator import generate_pdf_from_markdown
 
 router = APIRouter()
 
@@ -57,3 +60,44 @@ async def get_notes(
             detail=f"No notes found for video {video_id}. Generate them first using POST.",
         )
     return NoteResponse.model_validate(note)
+
+
+@router.get(
+    "/videos/{video_id}/notes/export/pdf",
+    summary="Export notes to PDF format",
+)
+async def export_notes_pdf(
+    video_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _: Annotated[User, Depends(get_current_user)],
+):
+    """Export the generated study notes for a video as a styled PDF guide."""
+    video_repo = VideoRepository(db)
+    video = await video_repo.get_by_id(video_id)
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found.",
+        )
+
+    service = NoteService(db)
+    notes = await service.get_notes(video_id)
+    if not notes:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No notes found for this video. Generate them first.",
+        )
+
+    pdf_title = video.title or f"Study Guide - {video.youtube_video_id}"
+    pdf_buffer = generate_pdf_from_markdown(pdf_title, notes.generated_notes)
+
+    safe_title = "".join(c for c in pdf_title if c.isalnum() or c in "._- ").strip()
+    safe_title = safe_title[:50] or "notes"
+
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_title}.pdf"'
+        },
+    )

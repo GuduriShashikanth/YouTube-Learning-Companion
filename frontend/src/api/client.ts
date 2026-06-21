@@ -169,4 +169,65 @@ export async function getChatHistory(
   return data;
 }
 
+export async function updateUserNotes(
+  videoId: string,
+  userNotes: string
+): Promise<Video> {
+  const { data } = await api.patch<Video>(`/videos/${videoId}/user-notes`, {
+    user_notes: userNotes,
+  });
+  return data;
+}
+
+export async function downloadFlashcardsCSV(
+  videoId: string,
+  filename: string
+): Promise<void> {
+  const response = await api.get(`/videos/${videoId}/flashcards/export/csv`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function downloadFlashcardsAPKG(
+  videoId: string,
+  filename: string
+): Promise<void> {
+  const response = await api.get(`/videos/${videoId}/flashcards/export/apkg`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export async function downloadNotesPDF(
+  videoId: string,
+  filename: string
+): Promise<void> {
+  const response = await api.get(`/videos/${videoId}/notes/export/pdf`, {
+    responseType: 'blob',
+  });
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
 export default api;

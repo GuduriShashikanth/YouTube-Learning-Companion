@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { AlertCircle, RefreshCw, Loader2, Clock, User } from 'lucide-react';
 import { getVideo } from '../api/client';
 import type { Video } from '../types';
 import VideoPlayer from '../components/VideoPlayer';
@@ -80,7 +80,7 @@ export default function VideoPage() {
 
   return (
     <div className="mx-auto max-w-none px-4 py-6 md:px-8 lg:px-12">
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px] items-start">
+      <div className="grid gap-6 lg:grid-cols-[3fr_2fr] items-start">
         {/* Main Content Area */}
         <div className="min-w-0 space-y-6">
           {/* Custom Video Player */}
@@ -92,19 +92,33 @@ export default function VideoPage() {
             />
           </div>
 
-          {/* Video Title */}
+          {/* Video Title + Metadata */}
           <div className="animate-fade-in">
-            <h1 className="text-xl md:text-2xl font-bold text-text tracking-tight animate-fade-in">
+            <h1 className="text-xl md:text-2xl font-bold text-text tracking-tight">
               {video.title || 'Untitled Video'}
             </h1>
-            <p className="text-xs font-semibold text-text-muted mt-1 animate-fade-in">
-              Processed on{' '}
-              {new Date(video.created_at).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
+              {video.channel_name && (
+                <span className="flex items-center gap-1 font-semibold">
+                  <User className="h-3.5 w-3.5" />
+                  {video.channel_name}
+                </span>
+              )}
+              {video.duration && (
+                <span className="flex items-center gap-1 rounded-full bg-surface-light border border-surface-lighter px-2 py-0.5 font-bold text-text-dim">
+                  <Clock className="h-3 w-3" />
+                  {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
+                </span>
+              )}
+              <span className="text-text-dim">
+                Added{' '}
+                {new Date(video.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
           </div>
         </div>
 

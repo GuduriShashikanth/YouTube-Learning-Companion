@@ -51,6 +51,17 @@ const FEATURES = [
   },
 ];
 
+function formatDuration(seconds: number | null): string {
+  if (!seconds) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function HomePage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(true);
@@ -168,11 +179,21 @@ export default function HomePage() {
                 {/* Thumbnail */}
                 <div className="relative overflow-hidden rounded-xl">
                   <img
-                    src={`https://img.youtube.com/vi/${video.youtube_video_id}/mqdefault.jpg`}
+                    src={video.thumbnail_url || `https://img.youtube.com/vi/${video.youtube_video_id}/maxresdefault.jpg`}
                     alt={video.title || 'Video thumbnail'}
                     className="aspect-video w-full rounded-xl object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      e.currentTarget.src = `https://img.youtube.com/vi/${video.youtube_video_id}/mqdefault.jpg`;
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-surface-dark/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  
+                  {video.duration && (
+                    <div className="absolute bottom-2.5 left-2.5 rounded bg-black/75 px-1.5 py-0.5 text-[10px] font-bold text-white tracking-wide">
+                      {formatDuration(video.duration)}
+                    </div>
+                  )}
+
                   <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full bg-primary/90 px-2.5 py-1 text-xs font-medium text-white opacity-0 transition-all duration-300 group-hover:opacity-100">
                     <ArrowRight className="h-3 w-3" />
                     Open
@@ -180,16 +201,19 @@ export default function HomePage() {
                 </div>
 
                 <div className="p-4">
-                  <h3 className="mb-1 line-clamp-2 text-sm font-semibold text-text transition-colors group-hover:text-primary-light">
+                  <h3 className="mb-1.5 line-clamp-2 text-sm font-semibold text-text transition-colors group-hover:text-primary-light">
                     {video.title || 'Untitled Video'}
                   </h3>
-                  <p className="text-xs text-text-dim">
-                    {new Date(video.created_at).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </p>
+                  <div className="flex items-center justify-between text-xs text-text-dim">
+                    <span className="font-semibold truncate max-w-[150px]">{video.channel_name || 'YouTube'}</span>
+                    <span>
+                      {new Date(video.created_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
+                  </div>
                 </div>
               </Link>
             ))}

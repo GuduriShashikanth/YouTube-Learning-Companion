@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
+import httpx
+from app.core.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 
 # Regex patterns covering all common YouTube URL formats
@@ -71,3 +76,66 @@ def format_timestamp(seconds: float) -> str:
     hours, remainder = divmod(total_seconds, 3600)
     minutes, secs = divmod(remainder, 60)
     return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+
+
+async def fetch_video_metadata(youtube_url: str, video_id: str) -> dict:
+    """Fetch video metadata: title, channel_name, duration, thumbnail_url.
+
+    Attempts to use yt-dlp first. If it fails or is not installed, falls back to oEmbed.
+    """
+    metadata = {
+        "title": None,
+        "channel_name": None,
+        "duration": None,
+        "thumbnail_url": None,
+    }
+
+    # 1. Try yt-dlp first
+    try:
+        import yt_dlp
+
+        def _extract():
+            ydl_opts = {
+                'skip_download': True,
+                'quiet': True,
+                'no_warnings': True,
+                'noplaylist': True,  # don't expand playlists
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                return ydl.extract_info(youtube_url, download=False)
+
+        # Run in a thread pool to avoid blocking the event loop
+        info = await asyncio.to_thread(_extract)
+        if info:
+            metadata["title"] = info.get("title")
+            metadata["channel_name"] = info.get("uploader") or info.get("channel")
+            metadata["duration"] = int(info.get("duration")) if info.get("duration") else None
+            metadata["thumbnail_url"] = info.get("thumbnail")
+            logger.info("Successfully fetched video metadata using yt-dlp")
+            return metadata
+    except ImportError:
+        logger.warning("yt-dlp is not installed. Falling back to oEmbed.")
+    except Exception as e:
+        logger.warning(f"yt-dlp failed to fetch metadata: {e}. Falling back to oEmbed.")
+
+    # 2. Fallback to YouTube oEmbed API
+    try:
+        url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=5.0)
+            if response.status_code == 200:
+                data = response.json()
+                metadata["title"] = data.get("title")
+                metadata["channel_name"] = data.get("author_name")
+                metadata["thumbnail_url"] = data.get("thumbnail_url")
+                logger.info("Successfully fetched video metadata using YouTube oEmbed")
+            else:
+                logger.warning(f"oEmbed API returned status code {response.status_code}")
+    except Exception as e:
+        logger.error(f"oEmbed API request failed: {e}")
+
+    # 3. Fallback for thumbnail if still missing
+    if not metadata["thumbnail_url"]:
+        metadata["thumbnail_url"] = f"https://i.ytimg.com/vi/{video_id}/maxresdefault.jpg"
+
+    return metadata

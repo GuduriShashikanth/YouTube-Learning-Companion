@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Clock, BookOpen, Brain, Layers, MessageSquare, Loader2 } from 'lucide-react';
+import { Search, Clock, BookOpen, Brain, Layers, MessageSquare, Loader2, PenTool } from 'lucide-react';
 import { getTranscript } from '../api/client';
 import type { TranscriptChunk } from '../types';
 import NotesView from './NotesView';
 import QuizView from './QuizView';
 import FlashcardView from './FlashcardView';
 import ChatPanel from './ChatPanel';
+import MyNotesView from './MyNotesView';
 
 interface TranscriptNotesPanelProps {
   videoId: string;
@@ -15,6 +16,7 @@ interface TranscriptNotesPanelProps {
 
 const TABS = [
   { key: 'transcript', label: 'Transcript', icon: Clock },
+  { key: 'my-notes', label: 'My Notes', icon: PenTool },
   { key: 'summary', label: 'Summary', icon: BookOpen },
   { key: 'quiz', label: 'Quiz', icon: Brain },
   { key: 'flashcards', label: 'Flashcards', icon: Layers },
@@ -181,25 +183,35 @@ export default function TranscriptNotesPanel({
         )}
 
         {activeTab === 'summary' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <NotesView videoId={videoId} isSidebar />
           </div>
         )}
 
+        {activeTab === 'my-notes' && (
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            <MyNotesView
+              videoId={videoId}
+              currentTime={currentTime}
+              onTimestampClick={onTimestampClick}
+            />
+          </div>
+        )}
+
         {activeTab === 'quiz' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <QuizView videoId={videoId} isSidebar />
           </div>
         )}
 
         {activeTab === 'flashcards' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <FlashcardView videoId={videoId} isSidebar />
           </div>
         )}
 
         {activeTab === 'chat' && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <ChatPanel videoId={videoId} onTimestampClick={onTimestampClick} isSidebar />
           </div>
         )}

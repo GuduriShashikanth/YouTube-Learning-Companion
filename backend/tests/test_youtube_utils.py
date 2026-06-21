@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.utils.youtube import extract_video_id, is_valid_youtube_url
+from app.utils.youtube import extract_video_id, validate_youtube_url as is_valid_youtube_url
 
 
 class TestExtractVideoId:

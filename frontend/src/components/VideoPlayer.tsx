@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react';
 
 interface VideoPlayerProps {
   youtubeVideoId: string;
@@ -54,12 +54,52 @@ export default function VideoPlayer({
   onTimeUpdate,
 }: VideoPlayerProps) {
   const playerRef = useRef<any>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(1);
   const [volume, setVolume] = useState(50);
   const [isMuted, setIsMuted] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Track fullscreen changes
+  useEffect(() => {
+    const handleFsChange = () => {
+      const fs =
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).msFullscreenElement;
+      setIsFullscreen(!!fs);
+      setControlsVisible(true);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    document.addEventListener('msfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+      document.removeEventListener('msfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  // Auto-hide controls after 2.5s of inactivity (always, since controls are a transparent overlay)
+  const resetHideTimer = () => {
+    setControlsVisible(true);
+    if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
+    hideControlsTimer.current = setTimeout(() => setControlsVisible(false), 1000);
+  };
+
+  // Start the initial hide timer on mount
+  useEffect(() => {
+    hideControlsTimer.current = setTimeout(() => setControlsVisible(false), 1000);
+    return () => {
+      if (hideControlsTimer.current) clearTimeout(hideControlsTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -68,15 +108,11 @@ export default function VideoPlayer({
       await loadYouTubeAPI();
       if (!active) return;
 
-      // Destory previous
       if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {}
+        try { playerRef.current.destroy(); } catch (e) {}
         playerRef.current = null;
       }
 
-      // Create new player targeting the div
       new (window as any).YT.Player('youtube-player-iframe', {
         videoId: youtubeVideoId,
         playerVars: {
@@ -84,7 +120,7 @@ export default function VideoPlayer({
           rel: 0,
           modestbranding: 1,
           disablekb: 1,
-          fs: 0,
+          fs: 0,          // disable YouTube's own fullscreen button (we handle it)
           start: startTime !== undefined ? Math.floor(startTime) : undefined,
         },
         events: {
@@ -102,7 +138,6 @@ export default function VideoPlayer({
           onStateChange: (event: any) => {
             if (!active) return;
             const state = event.data;
-            // YT.PlayerState.PLAYING is 1, PAUSED is 2
             setIsPlaying(state === 1);
             if (state === 1) {
               setDuration(event.target.getDuration() || 1);
@@ -117,9 +152,7 @@ export default function VideoPlayer({
     return () => {
       active = false;
       if (playerRef.current) {
-        try {
-          playerRef.current.destroy();
-        } catch (e) {}
+        try { playerRef.current.destroy(); } catch (e) {}
         playerRef.current = null;
       }
       setIsReady(false);
@@ -146,9 +179,7 @@ export default function VideoPlayer({
         }
       }, 250);
     }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
+    return () => { if (intervalId) clearInterval(intervalId); };
   }, [isPlaying, onTimeUpdate, isReady]);
 
   const togglePlay = () => {
@@ -193,20 +224,26 @@ export default function VideoPlayer({
   };
 
   const toggleFullscreen = () => {
-    const iframe = document.getElementById('youtube-player-iframe');
-    if (iframe) {
-      if (iframe.requestFullscreen) {
-        iframe.requestFullscreen();
-      } else if ((iframe as any).webkitRequestFullscreen) {
-        (iframe as any).webkitRequestFullscreen();
-      } else if ((iframe as any).msRequestFullscreen) {
-        (iframe as any).msRequestFullscreen();
-      }
+    const el = wrapperRef.current;
+    if (!el) return;
+    if (!isFullscreen) {
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if ((el as any).webkitRequestFullscreen) (el as any).webkitRequestFullscreen();
+      else if ((el as any).msRequestFullscreen) (el as any).msRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if ((document as any).webkitExitFullscreen) (document as any).webkitExitFullscreen();
+      else if ((document as any).msExitFullscreen) (document as any).msExitFullscreen();
     }
   };
 
   return (
-    <div className="glass overflow-hidden bg-white">
+    <div
+      ref={wrapperRef}
+      onMouseMove={resetHideTimer}
+      onMouseLeave={() => isFullscreen && setControlsVisible(false)}
+      className="relative overflow-hidden rounded-2xl bg-black"
+    >
       {/* Video Container */}
       <div className="relative w-full bg-black" style={{ paddingTop: '56.25%' }}>
         <div
@@ -215,16 +252,22 @@ export default function VideoPlayer({
         />
         {/* Click overlay to toggle play/pause */}
         <div
-          onClick={togglePlay}
+          onClick={() => { togglePlay(); resetHideTimer(); }}
           className="absolute inset-0 cursor-pointer z-10"
         />
       </div>
 
-      {/* Custom Control Bar */}
-      <div className="flex flex-col gap-3 px-4 py-3 bg-white border-t border-surface-light select-none">
+      {/* Custom Control Bar — always overlaid at the bottom, transparent */}
+      <div
+        className={[
+          'absolute bottom-0 left-0 right-0 flex flex-col gap-2 px-4 pt-8 pb-3 select-none transition-opacity duration-500 z-20',
+          'bg-gradient-to-t from-black/70 via-black/20 to-transparent',
+          controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+        ].join(' ')}
+      >
         {/* Timeline Row */}
         <div className="flex items-center gap-3 w-full">
-          <span className="text-xs font-medium font-mono text-text-muted">
+          <span className="text-xs font-medium font-mono text-white/90 drop-shadow">
             {formatTime(currentTime)}
           </span>
           <input
@@ -236,7 +279,7 @@ export default function VideoPlayer({
             onChange={handleScrub}
             className="flex-1 accent-[#E11D48] h-1.5 bg-surface-light rounded-lg cursor-pointer appearance-none outline-none"
           />
-          <span className="text-xs font-medium font-mono text-text-muted">
+          <span className="text-xs font-medium font-mono text-white/90 drop-shadow">
             {formatTime(duration)}
           </span>
         </div>
@@ -247,7 +290,7 @@ export default function VideoPlayer({
             {/* Play/Pause Button */}
             <button
               onClick={togglePlay}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-light text-text hover:bg-surface-lighter hover:text-primary transition-all duration-200"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all duration-200"
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? (
@@ -261,11 +304,11 @@ export default function VideoPlayer({
             <div className="flex items-center gap-2 group/volume">
               <button
                 onClick={toggleMute}
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-light text-text hover:bg-surface-lighter transition-all duration-200"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all duration-200"
                 aria-label={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="h-4.5 w-4.5 text-text-muted" />
+                  <VolumeX className="h-4.5 w-4.5" />
                 ) : (
                   <Volume2 className="h-4.5 w-4.5" />
                 )}
@@ -276,19 +319,23 @@ export default function VideoPlayer({
                 max="100"
                 value={isMuted ? '0' : volume.toString()}
                 onChange={handleVolumeChange}
-                className="w-16 md:w-20 accent-text h-1 bg-surface-light rounded-lg cursor-pointer appearance-none opacity-0 group-hover/volume:opacity-100 transition-opacity duration-300"
+                className="w-16 md:w-20 accent-[#E11D48] h-1 bg-surface-light rounded-lg cursor-pointer appearance-none opacity-0 group-hover/volume:opacity-100 transition-opacity duration-300"
               />
             </div>
           </div>
 
           <div>
-            {/* Fullscreen Button */}
+            {/* Fullscreen Toggle Button */}
             <button
               onClick={toggleFullscreen}
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-light text-text hover:bg-surface-lighter transition-all duration-200"
-              aria-label="Fullscreen"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm text-white hover:bg-white/25 transition-all duration-200"
+              aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
             >
-              <Maximize className="h-4.5 w-4.5" />
+              {isFullscreen ? (
+                <Minimize className="h-4.5 w-4.5" />
+              ) : (
+                <Maximize className="h-4.5 w-4.5" />
+              )}
             </button>
           </div>
         </div>

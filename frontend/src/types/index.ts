@@ -19,6 +19,10 @@ export interface Video {
   youtube_url: string;
   youtube_video_id: string;
   title: string | null;
+  channel_name: string | null;
+  duration: number | null;
+  thumbnail_url: string | null;
+  user_notes: string | null;
   created_at: string;
 }
 

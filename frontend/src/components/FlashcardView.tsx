@@ -6,8 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Layers,
+  FileDown,
 } from 'lucide-react';
-import { getFlashcards, generateFlashcards } from '../api/client';
+import { getFlashcards, generateFlashcards, downloadFlashcardsCSV, downloadFlashcardsAPKG } from '../api/client';
 import type { Flashcard } from '../types';
 
 interface FlashcardViewProps {
@@ -21,6 +22,32 @@ export default function FlashcardView({ videoId, isSidebar }: FlashcardViewProps
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [downloadingCSV, setDownloadingCSV] = useState(false);
+  const [downloadingAPKG, setDownloadingAPKG] = useState(false);
+
+  const handleExportCSV = async () => {
+    if (flashcards.length === 0) return;
+    setDownloadingCSV(true);
+    try {
+      await downloadFlashcardsCSV(videoId, `anki-flashcards-${videoId}.csv`);
+    } catch {
+      // error fallback
+    } finally {
+      setDownloadingCSV(false);
+    }
+  };
+
+  const handleExportAPKG = async () => {
+    if (flashcards.length === 0) return;
+    setDownloadingAPKG(true);
+    try {
+      await downloadFlashcardsAPKG(videoId, `anki-deck-${videoId}.apkg`);
+    } catch {
+      // error fallback
+    } finally {
+      setDownloadingAPKG(false);
+    }
+  };
 
   const fetchFlashcards = useCallback(async () => {
     setLoading(true);
@@ -133,7 +160,8 @@ export default function FlashcardView({ videoId, isSidebar }: FlashcardViewProps
   const card = flashcards[currentIndex];
 
   return (
-    <div className={isSidebar ? "flex flex-col h-full bg-white select-none animate-fade-in p-4 overflow-y-auto max-h-[500px]" : "glass animate-fade-in p-6 bg-white border border-surface-light"}>
+    <div className={isSidebar ? "flex flex-col h-full bg-white select-none animate-fade-in" : "glass animate-fade-in p-6 bg-white border border-surface-light"}>
+      <div className={isSidebar ? "flex-1 overflow-y-auto min-h-0 p-4" : "contents"}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -144,6 +172,34 @@ export default function FlashcardView({ videoId, isSidebar }: FlashcardViewProps
           <span className="rounded-full bg-surface-light border border-surface-lighter px-3 py-1 text-xs font-semibold text-text-muted">
             {currentIndex + 1} / {flashcards.length}
           </span>
+          <button
+            onClick={handleExportCSV}
+            disabled={downloadingCSV}
+            title="Export as Anki CSV"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light px-2.5 py-1 text-xs font-semibold text-text-muted transition-all duration-150 hover:bg-surface-light hover:text-text disabled:opacity-50"
+          >
+            {downloadingCSV ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" />
+            ) : (
+              <FileDown className="h-3.5 w-3.5 text-text-muted" />
+            )}
+            CSV
+          </button>
+
+          <button
+            onClick={handleExportAPKG}
+            disabled={downloadingAPKG}
+            title="Export directly as Anki Deck (.apkg)"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light px-2.5 py-1 text-xs font-semibold text-text-muted transition-all duration-150 hover:bg-surface-light hover:text-text disabled:opacity-50"
+          >
+            {downloadingAPKG ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-text-muted" />
+            ) : (
+              <FileDown className="h-3.5 w-3.5 text-[#E11D48]" />
+            )}
+            APKG
+          </button>
+
           <button
             onClick={handleGenerate}
             disabled={generating}
@@ -212,6 +268,7 @@ export default function FlashcardView({ videoId, isSidebar }: FlashcardViewProps
         >
           <ChevronRight className="h-4 w-4" />
         </button>
+      </div>
       </div>
     </div>
   );

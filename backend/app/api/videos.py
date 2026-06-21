@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.repositories.transcript_repo import TranscriptRepository
+from app.repositories.video_repo import VideoRepository
 from app.schemas.transcript import TranscriptResponse
-from app.schemas.video import VideoListResponse, VideoProcessRequest, VideoResponse
+from app.schemas.video import VideoListResponse, VideoProcessRequest, VideoResponse, UserNotesUpdateRequest
 from app.services.video_service import VideoService
 
 router = APIRouter()
@@ -102,3 +103,26 @@ async def list_videos(
         videos=[VideoResponse.model_validate(v) for v in result["videos"]],
         total=result["total"],
     )
+
+
+@router.patch(
+    "/{video_id}/user-notes",
+    response_model=VideoResponse,
+    summary="Update user personal notes for a video",
+)
+async def update_user_notes(
+    video_id: uuid.UUID,
+    request: UserNotesUpdateRequest,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> VideoResponse:
+    """Update the user's personal notes for a video."""
+    repo = VideoRepository(db)
+    video = await repo.get_by_id(video_id)
+    if not video or video.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found or access denied.",
+        )
+    updated_video = await repo.update_user_notes(video_id, request.user_notes)
+    return VideoResponse.model_validate(updated_video)

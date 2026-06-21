@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import ForeignKey, String, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -30,6 +30,10 @@ class Video(TimestampMixin, Base):
     youtube_url: Mapped[str] = mapped_column(String(500))
     youtube_video_id: Mapped[str] = mapped_column(String(50), index=True)
     title: Mapped[str | None] = mapped_column(String(500))
+    channel_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    thumbnail_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    user_notes: Mapped[str | None] = mapped_column(Text, nullable=True, default="")
 
     # Relationships
     user: Mapped[User] = relationship("User", back_populates="videos", lazy="selectin")

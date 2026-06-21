@@ -44,6 +44,10 @@ class VideoResponse(BaseModel):
     youtube_url: str
     youtube_video_id: str
     title: str | None = None
+    channel_name: str | None = None
+    duration: int | None = None
+    thumbnail_url: str | None = None
+    user_notes: str | None = ""
     created_at: datetime
 
 
@@ -52,3 +56,9 @@ class VideoListResponse(BaseModel):
 
     videos: list[VideoResponse]
     total: int
+
+
+class UserNotesUpdateRequest(BaseModel):
+    """Schema for updating user notes."""
+
+    user_notes: str

@@ -20,6 +20,10 @@ class VideoRepository:
         youtube_url: str,
         youtube_video_id: str,
         title: str | None = None,
+        channel_name: str | None = None,
+        duration: int | None = None,
+        thumbnail_url: str | None = None,
+        user_notes: str | None = "",
     ) -> Video:
         """Create a new video record."""
         video = Video(
@@ -27,10 +31,24 @@ class VideoRepository:
             youtube_url=youtube_url,
             youtube_video_id=youtube_video_id,
             title=title,
+            channel_name=channel_name,
+            duration=duration,
+            thumbnail_url=thumbnail_url,
+            user_notes=user_notes,
         )
         self.session.add(video)
         await self.session.flush()
         await self.session.refresh(video)
+        return video
+
+    async def update_user_notes(self, video_id: UUID, user_notes: str) -> Video | None:
+        """Update the user notes for a video."""
+        video = await self.get_by_id(video_id)
+        if video:
+            video.user_notes = user_notes
+            self.session.add(video)
+            await self.session.flush()
+            await self.session.refresh(video)
         return video
 
     async def get_by_id(self, video_id: UUID) -> Video | None:

@@ -7,8 +7,9 @@ import {
   Copy,
   Check,
   BookOpen,
+  FileDown,
 } from 'lucide-react';
-import { getNotes, generateNotes } from '../api/client';
+import { getNotes, generateNotes, downloadNotesPDF } from '../api/client';
 import type { Note } from '../types';
 
 interface NotesViewProps {
@@ -23,6 +24,7 @@ export default function NotesView({ videoId, onNotesGenerated, isSidebar }: Note
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
@@ -64,6 +66,31 @@ export default function NotesView({ videoId, onNotesGenerated, isSidebar }: Note
     } catch {
       // fallback
     }
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!notes) return;
+    setDownloadingPDF(true);
+    try {
+      await downloadNotesPDF(videoId, `study-guide-${videoId}.pdf`);
+    } catch {
+      // error fallback
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const handleDownloadMarkdown = () => {
+    if (!notes) return;
+    const file = new Blob([notes.generated_notes], { type: 'text/markdown' });
+    const objectUrl = URL.createObjectURL(file);
+    const element = document.createElement('a');
+    element.href = objectUrl;
+    element.download = `study-notes-${videoId}.md`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+    URL.revokeObjectURL(objectUrl);
   };
 
   if (loading) {
@@ -140,7 +167,7 @@ export default function NotesView({ videoId, onNotesGenerated, isSidebar }: Note
           <BookOpen className="h-4 w-4 text-[#E11D48]" />
           <h3 className="text-xs font-bold text-text uppercase tracking-wider">Lesson Summary</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             onClick={handleCopy}
             className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-2 py-1 text-[11px] font-semibold text-text hover:bg-surface-light transition-all duration-150"
@@ -157,6 +184,30 @@ export default function NotesView({ videoId, onNotesGenerated, isSidebar }: Note
               </>
             )}
           </button>
+          
+          <button
+            onClick={handleDownloadMarkdown}
+            title="Download as Markdown"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-2 py-1 text-[11px] font-semibold text-text hover:bg-surface-light transition-all duration-150"
+          >
+            <FileDown className="h-3 w-3 text-text-muted" />
+            Markdown
+          </button>
+
+          <button
+            onClick={handleDownloadPDF}
+            disabled={downloadingPDF}
+            title="Download styled PDF Guide"
+            className="flex items-center gap-1.5 rounded-lg border border-surface-light bg-white px-2 py-1 text-[11px] font-semibold text-text hover:bg-surface-light transition-all duration-150 disabled:opacity-50"
+          >
+            {downloadingPDF ? (
+              <Loader2 className="h-3 w-3 animate-spin text-text-muted" />
+            ) : (
+              <FileDown className="h-3 w-3 text-red-600" />
+            )}
+            PDF
+          </button>
+
           <button
             onClick={handleGenerate}
             disabled={generating}
@@ -169,7 +220,7 @@ export default function NotesView({ videoId, onNotesGenerated, isSidebar }: Note
       </div>
 
       {/* Content */}
-      <div className="p-4 overflow-y-auto flex-1 max-h-[500px]">
+      <div className="p-4 overflow-y-auto flex-1 min-h-0">
         <div className="prose-custom max-w-none text-text">
           <ReactMarkdown>{notes?.generated_notes || ''}</ReactMarkdown>
         </div>

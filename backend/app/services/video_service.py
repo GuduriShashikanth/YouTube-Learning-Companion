@@ -15,7 +15,7 @@ from app.rag.vector_store import VectorStoreManager
 from app.repositories.transcript_repo import TranscriptRepository
 from app.repositories.video_repo import VideoRepository
 from app.services.transcript_service import TranscriptService
-from app.utils.youtube import extract_video_id
+from app.utils.youtube import extract_video_id, fetch_video_metadata
 
 logger = get_logger(__name__)
 
@@ -102,12 +102,40 @@ class VideoService:
                 video_id_str
             )
 
+        # Fetch metadata
+        metadata = {}
+        if other_videos:
+            first_other = other_videos[0]
+            if first_other.title or first_other.channel_name:
+                metadata = {
+                    "title": first_other.title,
+                    "channel_name": first_other.channel_name,
+                    "duration": first_other.duration,
+                    "thumbnail_url": first_other.thumbnail_url,
+                }
+        
+        if not metadata:
+            try:
+                metadata = await fetch_video_metadata(youtube_url, video_id_str)
+            except Exception as e:
+                logger.error(f"Failed to fetch video metadata: {e}")
+                
+        if not metadata.get("duration") and timestamps:
+            try:
+                last_segment = timestamps[-1]
+                metadata["duration"] = int(last_segment["start"] + last_segment["duration"])
+            except Exception:
+                pass
+
         # 5. Create a fresh Video record for THIS user
         video = await self.video_repo.create(
             user_id=user_id,
             youtube_url=youtube_url,
             youtube_video_id=video_id_str,
-            title=None,
+            title=metadata.get("title") or "Untitled Video",
+            channel_name=metadata.get("channel_name"),
+            duration=metadata.get("duration"),
+            thumbnail_url=metadata.get("thumbnail_url"),
         )
 
         # 6. Create a fresh Transcript record for THIS user's video
